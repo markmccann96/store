@@ -49,6 +49,30 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/Order'
+  /order/{id}:
+    get:
+      summary: Get Order by ID
+      description: Fetch a single order by its unique identifier.
+      tags:
+        - order
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Order ID
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '404':
+          description: Not Found
+      operationId: getOrderById
   /customer:
     get:
       summary: Get Customers
@@ -79,6 +103,30 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/Customer'
+  /customer/{id}:
+    get:
+      summary: Get Customer by ID
+      description: Fetch a single customer by their unique identifier.
+      tags:
+        - customer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Customer ID
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+        '404':
+          description: Not Found
+      operationId: getCustomerById
   /products:
     get:
       summary: Get Products

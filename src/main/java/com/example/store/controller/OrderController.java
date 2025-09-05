@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.net.URI;
 import java.util.List;
@@ -37,5 +38,12 @@ public class OrderController implements OrderApi {
         OrderDTO orderDTO = orderMapper.orderToOrderDTO(savedOrder);
         URI createdURI = URI.create("/order/" + orderDTO.getId());
         return ResponseEntity.created(createdURI).body(orderDTO);
+    }
+
+    @Override
+    @GetMapping("/{id}")
+    public ResponseEntity<OrderDTO> getOrderById( @PathVariable Long id) {
+        Order anOrder = orderRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        return ResponseEntity.ok(orderMapper.orderToOrderDTO(anOrder));
     }
 }

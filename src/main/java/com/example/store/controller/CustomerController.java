@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -39,5 +40,12 @@ public class CustomerController implements CustomerApi {
     @ResponseStatus(HttpStatus.CREATED)
     public CustomerDTO createCustomer(@RequestBody Customer customer) {
         return customerMapper.customerToCustomerDTO(customerRepository.save(customer));
+    }
+
+    @Override
+    @GetMapping("/{id}")
+    public ResponseEntity<CustomerDTO> getCustomerById(@PathVariable Long id) {
+        Customer customer = customerRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        return ResponseEntity.ok(customerMapper.customerToCustomerDTO(customer));
     }
 }

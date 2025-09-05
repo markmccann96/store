@@ -15,6 +15,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -60,6 +61,20 @@ class CustomerControllerTests {
         mockMvc.perform(get("/customer"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$..name").value("John Doe"));
-        ;
+    }
+
+    @Test
+    void testGetCustomerById() throws Exception {
+        when(customerRepository.findById(1L)).thenReturn(Optional.of(customer));
+        mockMvc.perform(get("/customer/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("John Doe"));
+    }
+
+    @Test
+    void testGetCustomerByIdNotFound() throws Exception {
+        when(customerRepository.findById(1L)).thenReturn(Optional.empty());
+        mockMvc.perform(get("/customer/1"))
+                .andExpect(status().isNotFound());
     }
 }
