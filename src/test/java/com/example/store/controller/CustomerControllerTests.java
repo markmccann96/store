@@ -17,6 +17,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
 import java.util.Optional;
 
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -77,4 +78,22 @@ class CustomerControllerTests {
         mockMvc.perform(get("/customer/1"))
                 .andExpect(status().isNotFound());
     }
+
+    @Test
+    void testSearchCustomers() throws Exception {
+        when(customerRepository.findByNameIgnoreCaseContaining("John")).thenReturn(List.of(customer));
+        mockMvc.perform(get("/customer/search?name=John"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$..name").value("John Doe"));
+    }
+
+    @Test
+    void testSearchCustomerNoResults() throws Exception {
+        when(customerRepository.findByNameIgnoreCaseContaining("John")).thenReturn(List.of());
+        mockMvc.perform(get("/customer/search?name=John"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isEmpty());
+        verify(customerRepository).findByNameIgnoreCaseContaining("John");
+    }
+
 }

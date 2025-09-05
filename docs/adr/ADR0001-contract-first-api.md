@@ -1,7 +1,7 @@
 # ADR0001: Contract First API
 
 ## Status
-Proposed
+Accepted
 
 ## Context
 We need a consistent approach for designing and documenting APIs.  

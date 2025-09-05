@@ -6,8 +6,14 @@ import com.example.store.entity.Order;
 import com.example.store.mapper.OrderMapper;
 import com.example.store.repository.OrderRepository;
 
+import com.example.store.utils.ResponseUtility;
+import io.swagger.v3.oas.annotations.Parameter;
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -26,8 +32,19 @@ public class OrderController implements OrderApi {
 
     @Override
     @GetMapping
-    public ResponseEntity<List<OrderDTO>> getOrders() {
-        return ResponseEntity.ok(orderMapper.ordersToOrderDTOs(orderRepository.findAll()));
+    public ResponseEntity<List<OrderDTO>> getOrders(@Parameter Integer limit, @Parameter Integer offset) {
+        if ( limit == null ) {
+            return ResponseEntity.ok(orderMapper.ordersToOrderDTOs(orderRepository.findAll()));
+        }
+        int page = offset / limit;
+        Pageable pageable = PageRequest.of(page, limit);
+        Page<Order> orders = orderRepository.findAll(pageable);
+        List<OrderDTO> orderDTOs = orderMapper.ordersToOrderDTOs(orders.getContent());
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("X-Total-Count", String.valueOf(orders.getTotalElements()));
+        String links = ResponseUtility.buildLinkHeader(limit, offset, orders.getTotalElements());
+        headers.add(HttpHeaders.LOCATION, links);
+        return new ResponseEntity<>(orderDTOs, headers, HttpStatus.OK);
     }
 
     @Override

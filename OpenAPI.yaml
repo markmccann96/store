@@ -18,19 +18,52 @@ paths:
   /order:
     get:
       summary: Get Orders
-      tags:
-        - order
+      description: >
+        Get all orders. Supports pagination via `limit` and `offset`.  
+        **Backward compatibility:** if `limit` is omitted, all matching records are returned.
+      tags: [ order ]
+      operationId: getOrders
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of results to return. If omitted, returns all.
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+          example: 50
+        - name: offset
+          in: query
+          required: false
+          description: Number of results to skip before returning results.
+          schema:
+            type: integer
+            format: int32
+            minimum: 0
+            default: 0
+          example: 100
       responses:
         '200':
           description: OK
+          headers:
+            X-Total-Count:
+              description: Total number of matching orders (before pagination).
+              schema:
+                type: integer
+                format: int64
+            Link:
+              description: >
+                RFC 8288 pagination links (`next`, `prev`, `first`, `last`).
+                Example: `<http://localhost:8080/order?limit=50&offset=50>; rel="next"`.
+              schema:
+                type: string
           content:
             application/json:
               schema:
                 type: array
                 items:
                   $ref: '#/components/schemas/Order'
-      operationId: getOrders
-      description: Get all orders
     post:
       summary: Create Order
       tags:
@@ -76,19 +109,52 @@ paths:
   /customer:
     get:
       summary: Get Customers
-      tags:
-        - customer
+      description: >
+        Get all customers. Supports pagination via `limit` and `offset`.  
+        **Backward compatibility:** if `limit` is omitted, all matching records are returned.
+      tags: [customer]
+      operationId: getCustomers
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of results to return. If omitted, returns all.
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+          example: 50
+        - name: offset
+          in: query
+          required: false
+          description: Number of results to skip before returning results.
+          schema:
+            type: integer
+            format: int32
+            minimum: 0
+            default: 0
+          example: 100
       responses:
         '200':
           description: OK
+          headers:
+            X-Total-Count:
+              description: Total number of matching customers (before pagination).
+              schema:
+                type: integer
+                format: int64
+            Link:
+              description: >
+                RFC 8288 pagination links (`next`, `prev`, `first`, `last`).
+                Example: `<http://localhost:8080/customer?limit=50&offset=50>; rel="next"`.
+              schema:
+                type: string
           content:
             application/json:
               schema:
                 type: array
                 items:
                   $ref: '#/components/schemas/Customer'
-      operationId: getCustomers
-      description: Get all customers
     post:
       summary: Create Customer
       tags:
@@ -127,17 +193,117 @@ paths:
         '404':
           description: Not Found
       operationId: getCustomerById
-  /products:
+  /customer/search:
     get:
-      summary: Get Products
+      summary: Search Customers
+      description: Search customers by partial name (case-insensitive substring match). Supports pagination.
       tags:
-        - product
+        - customer
+      operationId: searchCustomers
+      parameters:
+        - name: name
+          in: query
+          description: Partial name to search for (e.g., "ann" matches "Ann", "Joanne").
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            example: ann
+        - name: limit
+          in: query
+          description: Maximum number of results to return.
+          required: false
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            example: 50
+        - name: offset
+          in: query
+          description: Number of results to skip before starting to return results.
+          required: false
+          schema:
+            type: integer
+            format: int32
+            minimum: 0
+            default: 0
+            example: 100
       responses:
         '200':
           description: OK
+          headers:
+            X-Total-Count:
+              description: Total number of matching customers (before pagination).
+              schema:
+                type: integer
+                format: int64
+              example: 137
+            Link:
+              description: >
+                Pagination links per RFC 5988/8288; may include relations: `next`, `prev`, `first`, `last`.
+                Each value is in the form: `<url>; rel="next"`.
+              schema:
+                type: string
+              example: <
+                http://localhost:8080/customer/search?name=ann&limit=25&offset=25
+                >; rel="next", <
+                http://localhost:8080/customer/search?name=ann&limit=25&offset=0
+                >; rel="first"
           content:
             application/json:
               schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Customer'
+  /products:
+    get:
+      summary: Get Products
+      description: >
+        Get all products. Supports pagination via `limit` and `offset`.  
+        **Backward compatibility:** if `limit` is omitted, all matching records are returned.
+      tags: [ product ]
+      operationId: getProducts
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of results to return. If omitted, returns all.
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+          example: 50
+        - name: offset
+          in: query
+          required: false
+          description: Number of results to skip before returning results.
+          schema:
+            type: integer
+            format: int32
+            minimum: 0
+            default: 0
+          example: 100
+      responses:
+        '200':
+          description: OK
+          headers:
+            X-Total-Count:
+              description: Total number of matching products (before pagination).
+              schema:
+                type: integer
+                format: int64
+            Link:
+              description: >
+                RFC 8288 pagination links (`next`, `prev`, `first`, `last`).
+                Example: `<http://localhost:8080/products?limit=50&offset=50>; rel="next"`.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                # Keep your current response shape.
+                # If this endpoint actually returns a collection, consider switching to:
+                # type: array; items: { $ref: '#/components/schemas/Product' }
                 type: object
                 properties:
                   id:
@@ -149,8 +315,6 @@ paths:
                     items:
                       type: integer
                       format: int64
-      operationId: getProducts
-      description: Get all products
     post:
       summary: Create Product
       tags:
