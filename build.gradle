@@ -5,6 +5,7 @@ plugins {
     id 'org.liquibase.gradle' version '2.2.0'
     id 'com.diffplug.spotless' version '6.25.0'
     id 'jacoco'
+    id 'org.openapi.generator' version '7.8.0'   // ← ADD
 }
 
 group = 'com.example'
@@ -34,6 +35,7 @@ spotless {
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-validation' // ← for Jakarta validation in generated models
     runtimeOnly 'org.postgresql:postgresql'
     implementation 'org.liquibase:liquibase-core'
     compileOnly 'org.projectlombok:lombok'
@@ -42,6 +44,14 @@ dependencies {
     implementation 'org.mapstruct:mapstruct:1.6.2'
     implementation 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
     annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.2'
+    // OpenAPI/Swagger annotations (for @Operation, @ApiResponse, etc.)
+    implementation 'io.swagger.core.v3:swagger-annotations:2.2.21'
+
+    // added for the json nullable in the DTO
+    implementation 'org.openapitools:jackson-databind-nullable:0.2.6'
+
+    // Optional: swagger-ui at /swagger-ui.html during dev
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0'
 
     // Test dependencies
     testCompileOnly 'org.projectlombok:lombok'
@@ -49,10 +59,58 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     testAnnotationProcessor 'org.projectlombok:lombok'
     testAnnotationProcessor 'org.mapstruct:mapstruct-processor:1.6.2'
-
-
-
 }
+
+/** ---------- OpenAPI Generator wiring ---------- **/
+
+def openApiSpec   = "$projectDir/OpenAPI.yaml" // ← put your spec here
+def generatedDir  = "$buildDir/generated/sources/openapi"
+
+openApiGenerate {
+    generatorName = 'spring'
+    inputSpec = openApiSpec
+    outputDir = generatedDir
+
+    apiPackage = 'com.example.store.controller.api'
+    modelPackage = 'com.example.store.api.dto'
+    invokerPackage = 'com.example.store.api.invoker'
+
+    // Don’t generate tests; keep repo lean
+    generateApiTests = false
+    generateModelTests = false
+
+    // Spring Boot 3 + Jakarta + safe stubs pattern
+    additionalProperties = [
+            useSpringBoot3 : true,
+            useJakartaEe   : true,
+            interfaceOnly  : true,
+            useTags        : true,
+            modelNameSuffix: 'DTO'
+    ]
+    }
+
+sourceSets {
+    main {
+        java.srcDir "${generatedDir}/src/main/java"
+    }
+}
+tasks.named('openApiGenerate') {
+    outputs.dir "${generatedDir}/src/main/java"
+    outputs.dir "${generatedDir}/src/main/resources"
+}
+
+tasks.named('processResources') {
+    dependsOn tasks.openApiGenerate
+}
+tasks.compileJava {
+    dependsOn tasks.openApiGenerate
+}
+
+tasks.clean {
+    delete generatedDir
+}
+
+/** ---------- Existing tasks ---------- **/
 
 tasks.named('test') {
     useJUnitPlatform()
@@ -60,15 +118,11 @@ tasks.named('test') {
 }
 
 tasks.jacocoTestReport {
-    dependsOn tasks.test // Ensure tests run before generating the report
-
-    reports {
-        html.required.set(true)
-    }
+    dependsOn tasks.test
+    reports { html.required.set(true) }
     afterEvaluate {
         classDirectories = files(classDirectories.files.collect {
-            fileTree(dir: it,
-                    exclude: ['**/mapper/**', '**/StoreApplication.class'])
+            fileTree(dir: it, exclude: ['**/mapper/**', '**/StoreApplication.class'])
         })
     }
 }

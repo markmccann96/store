@@ -19,7 +19,7 @@ paths:
     get:
       summary: Get Orders
       tags:
-        - store
+        - order
       responses:
         '200':
           description: OK
@@ -34,28 +34,26 @@ paths:
     post:
       summary: Create Order
       tags:
-        - store
+        - order
       responses:
         '201':
           description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
       operationId: createOrder
       description: Create a new order
       requestBody:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                id:
-                  type: integer
-                  format: int64
-                descriptioon:
-                  type: string
+              $ref: '#/components/schemas/Order'
   /customer:
     get:
       summary: Get Customers
       tags:
-        - store
+        - customer
       responses:
         '200':
           description: OK
@@ -70,7 +68,7 @@ paths:
     post:
       summary: Create Customer
       tags:
-        - store
+        - customer
       responses:
         '201':
           description: Created
@@ -80,18 +78,12 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                id:
-                  type: integer
-                  format: int64
-                name:
-                  type: string
+              $ref: '#/components/schemas/Customer'
   /products:
     get:
       summary: Get Products
       tags:
-        - store
+        - product
       responses:
         '200':
           description: OK
@@ -114,7 +106,7 @@ paths:
     post:
       summary: Create Product
       tags:
-        - store
+        - product
       responses:
         '201':
           description: Created
@@ -150,7 +142,7 @@ components:
             id:
               type: integer
               format: int64
-            description:
+            name:
               type: string
     Customer:
       title: Customer
@@ -174,5 +166,9 @@ components:
                 x-stoplight:
                   id: mq08x82g95zl9
 tags:
-  - name: store
-    description: store operations
+  - name: order
+    description: store operations that focus on order operations
+  - name: customer
+    description: store operations that focus on the customer operations
+  - name: product
+    description: store operations that focus on the product operations

@@ -1,7 +1,7 @@
 package com.example.store.mapper;
 
-import com.example.store.dto.CustomerDTO;
 import com.example.store.entity.Customer;
+import com.example.store.api.dto.CustomerDTO;
 
 import org.mapstruct.Mapper;
 

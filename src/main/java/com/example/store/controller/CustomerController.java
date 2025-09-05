@@ -1,13 +1,15 @@
 package com.example.store.controller;
 
-import com.example.store.dto.CustomerDTO;
+import com.example.store.controller.api.CustomerApi;
 import com.example.store.entity.Customer;
 import com.example.store.mapper.CustomerMapper;
 import com.example.store.repository.CustomerRepository;
+import com.example.store.api.dto.CustomerDTO;
 
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,14 +17,22 @@ import java.util.List;
 @RestController
 @RequestMapping("/customer")
 @RequiredArgsConstructor
-public class CustomerController {
+public class CustomerController implements CustomerApi {
 
     private final CustomerRepository customerRepository;
     private final CustomerMapper customerMapper;
 
+
+    @Override
     @GetMapping
-    public List<CustomerDTO> getAllCustomers() {
-        return customerMapper.customersToCustomerDTOs(customerRepository.findAll());
+    public ResponseEntity<List<CustomerDTO>> getCustomers() {
+        return ResponseEntity.ok(customerMapper.customersToCustomerDTOs(customerRepository.findAll()));
+    }
+
+    @Override
+    public ResponseEntity<Void> createCustomer(CustomerDTO customerDTO) {
+
+        return CustomerApi.super.createCustomer(customerDTO);
     }
 
     @PostMapping
