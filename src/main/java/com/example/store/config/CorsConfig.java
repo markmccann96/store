@@ -20,10 +20,11 @@ public class CorsConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
-                        .allowedMethods("GET","POST","PUT","PATCH","DELETE","OPTIONS")
+                        .allowedOrigins("*")
+                        .allowedMethods("*")
                         .allowedHeaders("*")
-                        .exposedHeaders("X-Total-Count", "Link", "ETag", "Last-Modified")
-                        .allowCredentials(true)
+                        .exposedHeaders("X-Total-Count","Link","ETag","Last-Modified")
+                        .allowCredentials(false)
                         .maxAge(3600);
             }
         };

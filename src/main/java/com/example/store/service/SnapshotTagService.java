@@ -16,7 +16,11 @@ public class SnapshotTagService {
     // has changed on this table. This will catch CREATE, UPDATE or DELETE operations on the table with low overhead
     // since there is an index on the order updated_at column.
     public Snapshot current() {
-        var row = jdbcTemplate.queryForMap("select coalesce(max(updated_at), 'epoch') as maxu, count(*) as cnt from order");
+        var row = jdbcTemplate.queryForMap("""
+        select coalesce(max(updated_at), 'epoch'::timestamptz) as maxu,
+               count(*) as cnt
+        from public."order"
+        """);
         java.time.Instant maxUpdated = (row.get("maxu") instanceof java.sql.Timestamp ts)
                 ? ts.toInstant()
                 : java.time.Instant.EPOCH;
