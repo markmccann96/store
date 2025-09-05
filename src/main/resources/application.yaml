@@ -11,5 +11,12 @@ spring:
         format_sql: true
         use_sql_comments: true
         default_batch_fetch_size: 10
+        jdbc:
+          fetch_size: 1000
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
+server:
+  compression:
+    enabled: true
+    mime-types: application/json
+    min-response-size: 1024

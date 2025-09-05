@@ -5,6 +5,7 @@ import com.example.store.api.dto.OrderCustomerDTO;
 import com.example.store.api.dto.OrderDTO;
 import com.example.store.entity.Customer;
 import com.example.store.entity.Order;
+import com.example.store.entity.OrderRow;
 import org.mapstruct.BeanMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -25,8 +26,15 @@ public interface OrderMapper {
     @Mappings({
             @Mapping(target = "id", source = "id"),
             @Mapping(target = "name", source = "name"),
-            @Mapping(target = "orders", ignore = true)   // important to avoid recursion/unmapped warning
+            @Mapping(target = "orders", ignore = true)
     })
     Customer toCustomer(OrderCustomerDTO src);
+
+    // creates the order dto from projection for the find all version.
+    @Mapping(target = "customer.id", source = "customerId")
+    @Mapping(target = "customer.name", source = "customerName")
+    OrderDTO rowToDto(OrderRow row);
+
+    List<OrderDTO> rowsToDtos(List<OrderRow> rows);
 
 }

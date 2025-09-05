@@ -6,8 +6,10 @@ import com.example.store.entity.Order;
 import com.example.store.mapper.OrderMapper;
 import com.example.store.repository.OrderRepository;
 
+import com.example.store.service.SnapshotTagService;
 import com.example.store.utils.ResponseUtility;
 import io.swagger.v3.oas.annotations.Parameter;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.data.domain.Page;
@@ -17,6 +19,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.net.URI;
@@ -29,12 +33,31 @@ public class OrderController implements OrderApi {
 
     private final OrderRepository orderRepository;
     private final OrderMapper orderMapper;
+    private final SnapshotTagService snapshotTagService;
 
     @Override
     @GetMapping
     public ResponseEntity<List<OrderDTO>> getOrders(@Parameter Integer limit, @Parameter Integer offset) {
         if ( limit == null ) {
-            return ResponseEntity.ok(orderMapper.ordersToOrderDTOs(orderRepository.findAll()));
+            SnapshotTagService.Snapshot current = snapshotTagService.current();
+           HttpServletRequest request = currentRequest();
+           String ifNoneMatch = request.getHeader(HttpHeaders.IF_NONE_MATCH);
+           var ifModifiedSince = request.getDateHeader(HttpHeaders.IF_MODIFIED_SINCE);
+
+           if (snapshotTagService.matchesConditional(ifNoneMatch, ifModifiedSince, current)) {
+            return ResponseEntity.status(HttpStatus.NOT_MODIFIED)
+                    .eTag(current.etag())
+                    .lastModified(current.lastModified())
+                    .build();
+           }
+
+            List<OrderDTO> all = orderMapper.rowsToDtos(orderRepository.findAllRows());
+            return ResponseEntity.ok()
+                    .eTag(current.etag())
+                    .lastModified(current.lastModified())
+                    .header(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, "ETag, Last-Modified")
+                    .body(all);
+
         }
         int page = offset / limit;
         Pageable pageable = PageRequest.of(page, limit);
@@ -62,5 +85,10 @@ public class OrderController implements OrderApi {
     public ResponseEntity<OrderDTO> getOrderById( @PathVariable Long id) {
         Order anOrder = orderRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         return ResponseEntity.ok(orderMapper.orderToOrderDTO(anOrder));
+    }
+
+    private static HttpServletRequest currentRequest() {
+        var attrs = RequestContextHolder.getRequestAttributes();
+        return ((ServletRequestAttributes) attrs).getRequest();
     }
 }

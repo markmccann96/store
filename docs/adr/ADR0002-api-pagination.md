@@ -1,4 +1,4 @@
-# ADRNNNN: API Pagination Strategy (limit/offset + Link & X-Total-Count)
+# ADR0002: API Pagination Strategy (limit/offset + Link & X-Total-Count)
 
 ## Status
 

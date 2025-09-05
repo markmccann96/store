@@ -22,7 +22,7 @@ public class CorsConfig {
                 registry.addMapping("/**")
                         .allowedMethods("GET","POST","PUT","PATCH","DELETE","OPTIONS")
                         .allowedHeaders("*")
-                        .exposedHeaders("X-Total-Count", "Link")
+                        .exposedHeaders("X-Total-Count", "Link", "ETag", "Last-Modified")
                         .allowCredentials(true)
                         .maxAge(3600);
             }

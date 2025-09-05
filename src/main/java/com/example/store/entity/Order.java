@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 
 import lombok.Data;
 
+import java.time.Instant;
+
 @Entity
 @Data
 @Table(name = "\"order\"")
@@ -16,4 +18,11 @@ public class Order {
 
     @ManyToOne(fetch = FetchType.LAZY)
     private Customer customer;
+
+    // Note these are marked as read only as they are updated by the database triggers.
+    @Column(name = "created_at", nullable = false, updatable = false, insertable = false)
+    private Instant createdAt;
+
+    @Column(name = "updated_at", nullable = false, updatable = false, insertable = false)
+    private Instant updatedAt;
 }

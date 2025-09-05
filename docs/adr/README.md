@@ -35,6 +35,8 @@ Each ADR is a Markdown file stored in this directory.
 ## Index of ADRs
 
 - [ADR0001 - Contract First API](ADR0001-contract-first-api.md)
+- [ADR0002 - API Pagination](ADR0002-api-pagination.md)
+- [ADR0003 - Fetch All Performance](ADR0003-fetch-all-performance.md)
 
 ---
 
