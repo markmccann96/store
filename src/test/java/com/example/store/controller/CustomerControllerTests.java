@@ -17,6 +17,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
 import java.util.Optional;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -46,7 +47,7 @@ class CustomerControllerTests {
 
     @Test
     void testCreateCustomer() throws Exception {
-        when(customerRepository.save(customer)).thenReturn(customer);
+        when(customerRepository.save(any())).thenReturn(customer);
 
         mockMvc.perform(post("/customer")
                         .contentType(MediaType.APPLICATION_JSON)
