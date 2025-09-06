@@ -1,0 +1,158 @@
+databaseChangeLog:
+  - objectQuotingStrategy: QUOTE_ONLY_RESERVED_WORDS
+
+  # 1) product table (IDs supplied by client)
+  - changeSet:
+      id: 20250906-01-product-table
+      author: store
+      changes:
+        - createTable:
+            schemaName: public
+            tableName: product
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_product
+                    nullable: false
+              - column:
+                  name: description
+                  type: TEXT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMPTZ
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMPTZ
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createIndex:
+            schemaName: public
+            tableName: product
+            indexName: idx_product_description
+            columns:
+              - column: { name: description }
+      rollback:
+        - dropTable:
+            schemaName: public
+            tableName: product
+            cascadeConstraints: true
+
+  # 2) trigger to keep product.updated_at fresh on UPDATE
+  - changeSet:
+      id: 20250906-02-product-updated-at-trigger
+      author: store
+      preConditions:
+        - dbms: { type: postgresql }
+      changes:
+        - sql:
+            splitStatements: false
+            stripComments: true
+            sql: |
+              CREATE OR REPLACE FUNCTION public.trg_set_product_updated_at()
+              RETURNS trigger
+              LANGUAGE plpgsql
+              AS $$
+              BEGIN
+                NEW.updated_at := now();
+                RETURN NEW;
+              END;
+              $$;
+        - sql:
+            splitStatements: false
+            stripComments: true
+            sql: |
+              DROP TRIGGER IF EXISTS set_product_updated_at ON public.product;
+              CREATE TRIGGER set_product_updated_at
+              BEFORE UPDATE ON public.product
+              FOR EACH ROW
+              EXECUTE FUNCTION public.trg_set_product_updated_at();
+      rollback:
+        - sql: | 
+            DROP TRIGGER IF EXISTS set_product_updated_at ON public.product;
+            DROP FUNCTION IF EXISTS public.trg_set_product_updated_at();
+
+  # 3) order_product join table (many-to-many)
+  - changeSet:
+      id: 20250906-03-order-product-join
+      author: store
+      preConditions:
+        - tableExists:
+            schemaName: public
+            tableName: order        # reserved keyword; quoting handled by strategy
+      changes:
+        - createTable:
+            schemaName: public
+            tableName: order_product
+            columns:
+              - column:
+                  name: order_id
+                  type: BIGSERIAL
+                  constraints:
+                    nullable: false
+              - column:
+                  name: product_id
+                  type: BIGSERIAL
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMPTZ
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - addPrimaryKey:
+            schemaName: public
+            tableName: order_product
+            columnNames: order_id, product_id
+            constraintName: pk_order_product
+        - addForeignKeyConstraint:
+            baseTableSchemaName: public
+            baseTableName: order_product
+            baseColumnNames: order_id
+            referencedTableSchemaName: public
+            referencedTableName: order
+            referencedColumnNames: id
+            constraintName: fk_order_product_order
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            baseTableSchemaName: public
+            baseTableName: order_product
+            baseColumnNames: product_id
+            referencedTableSchemaName: public
+            referencedTableName: product
+            referencedColumnNames: id
+            constraintName: fk_order_product_product
+            onDelete: CASCADE
+        - createIndex:
+            schemaName: public
+            tableName: order_product
+            indexName: idx_order_product_order
+            columns:
+              - column: { name: order_id }
+        - createIndex:
+            schemaName: public
+            tableName: order_product
+            indexName: idx_order_product_product
+            columns:
+              - column: { name: product_id }
+      rollback:
+        - dropForeignKeyConstraint:
+            baseTableSchemaName: public
+            baseTableName: order_product
+            constraintName: fk_order_product_order
+        - dropForeignKeyConstraint:
+            baseTableSchemaName: public
+            baseTableName: order_product
+            constraintName: fk_order_product_product
+        - dropTable:
+            schemaName: public
+            tableName: order_product

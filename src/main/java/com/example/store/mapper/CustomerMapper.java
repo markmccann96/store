@@ -4,6 +4,7 @@ import com.example.store.entity.Customer;
 import com.example.store.api.dto.CustomerDTO;
 
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
 import java.util.List;
 
@@ -12,4 +13,7 @@ public interface CustomerMapper {
     CustomerDTO customerToCustomerDTO(Customer customer);
 
     List<CustomerDTO> customersToCustomerDTOs(List<Customer> customer);
+
+    @Mapping(target = "id", ignore = true)
+    Customer toEntity(CustomerDTO customerDTO);
 }

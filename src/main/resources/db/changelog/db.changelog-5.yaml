@@ -1,0 +1,54 @@
+databaseChangeLog:
+  - changeSet:
+      id: fix-sequences-2025-09-07
+      author: you
+      runOnChange: true
+      preConditions:
+        - dbms:
+            type: postgresql
+      comment: >
+        Sync sequences to MAX(id) for "order", customer, and product so BIGSERIAL
+        next values don’t clash with existing rows.
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              -- "order" uses a reserved word; keep the table name quoted.
+              SELECT setval(
+                pg_get_serial_sequence('"order"', 'id'),
+                COALESCE((SELECT MAX(id) FROM "order"), 0),
+                true
+              );
+
+              -- customer
+              SELECT setval(
+                pg_get_serial_sequence('customer', 'id'),
+                COALESCE((SELECT MAX(id) FROM customer), 0),
+                true
+              );
+
+              -- product
+              SELECT setval(
+                pg_get_serial_sequence('product', 'id'),
+                COALESCE((SELECT MAX(id) FROM product), 0),
+                true
+              );
+      rollback:
+        - sql: |
+            -- Idempotent rollback: re-sync again to whatever the current MAX(id) is.
+            SELECT setval(
+              pg_get_serial_sequence('"order"', 'id'),
+              COALESCE((SELECT MAX(id) FROM "order"), 0),
+              true
+            );
+            SELECT setval(
+              pg_get_serial_sequence('customer', 'id'),
+              COALESCE((SELECT MAX(id) FROM customer), 0),
+              true
+            );
+            SELECT setval(
+              pg_get_serial_sequence('product', 'id'),
+              COALESCE((SELECT MAX(id) FROM product), 0),
+              true
+            );

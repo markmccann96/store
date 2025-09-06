@@ -10,15 +10,19 @@ import com.example.store.utils.ResponseUtility;
 import io.swagger.v3.oas.annotations.Parameter;
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.net.URI;
 import java.util.List;
 
 @RestController
@@ -68,20 +72,42 @@ public class CustomerController implements CustomerApi {
     }
 
     @Override
-    public ResponseEntity<Void> createCustomer(CustomerDTO customerDTO) {
-
-        return CustomerApi.super.createCustomer(customerDTO);
-    }
-
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public CustomerDTO createCustomer(@RequestBody Customer customer) {
-        return customerMapper.customerToCustomerDTO(customerRepository.save(customer));
+    public ResponseEntity<CustomerDTO> createCustomer(CustomerDTO customerDTO) {
+        Customer newCustomer = customerMapper.toEntity(customerDTO);
+        newCustomer.setId(null);
+
+         if (newCustomer.getOrders() != null) {
+            newCustomer.getOrders().forEach(o -> {
+                o.setId(null);
+                o.setCustomer(newCustomer);
+            });
+        }
+
+        try {
+            Customer savedCustomer = customerRepository.save(newCustomer);
+            CustomerDTO dto = customerMapper.customerToCustomerDTO(savedCustomer);
+
+            URI location = ServletUriComponentsBuilder
+                    .fromCurrentRequestUri()
+                    .path("/{id}")
+                    .buildAndExpand(savedCustomer.getId())
+                    .toUri();
+
+            return ResponseEntity.created(location)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(dto);
+        } catch (DataIntegrityViolationException ex) {
+            return ResponseEntity.status(409).build();
+        }
     }
 
     @Override
     @GetMapping("/{id}")
     public ResponseEntity<CustomerDTO> getCustomerById(@PathVariable Long id) {
+        if ( id == null ) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
         Customer customer = customerRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         return ResponseEntity.ok(customerMapper.customerToCustomerDTO(customer));
     }

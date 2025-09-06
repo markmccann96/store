@@ -23,7 +23,7 @@ public class CorsConfig {
                         .allowedOrigins("*")
                         .allowedMethods("*")
                         .allowedHeaders("*")
-                        .exposedHeaders("X-Total-Count","Link","ETag","Last-Modified")
+                        .exposedHeaders("X-Total-Count","Link","ETag","Last-Modified", "Location")
                         .allowCredentials(false)
                         .maxAge(3600);
             }

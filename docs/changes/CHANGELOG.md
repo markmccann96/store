@@ -10,7 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Contract-first API scaffolding generated via OpenAPI. See ADR: [ADR0001](../adr/ADR0001-contract-first-api.md).
 - Customer endpoints expose OpenAPI annotations.
 - New api for /orders/{id}. Added to the OpenAPI.yaml and the controllers to implement the function. 
-- New API for /customer/{id}. Added to the OpenAPI.yaml and the controllers to implement the function. 
+- New API for /customer/{id}. Added to the OpenAPI.yaml and the controllers to implement the function.
+- New Product controller for the /product end points.
+- New ProductMapper for the product to dto mapping
+- database changes for the product table.
 
 ### Changed
 - DTOs now generated with `DTO` suffix via codegen. Rationale: ensure clear separation from domain entities.
@@ -27,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Corrected `description` field typo in OpenAPI spec for `/order` POST.
+- Various minor issues with the open api specification for API to make them consistent.
 
 ### Security
 - (none)

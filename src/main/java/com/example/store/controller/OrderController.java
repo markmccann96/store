@@ -6,6 +6,7 @@ import com.example.store.entity.Order;
 import com.example.store.mapper.OrderMapper;
 import com.example.store.repository.OrderRepository;
 
+import com.example.store.service.OrderQueryService;
 import com.example.store.service.SnapshotTagService;
 import com.example.store.utils.ResponseUtility;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -34,6 +35,7 @@ public class OrderController implements OrderApi {
     private final OrderRepository orderRepository;
     private final OrderMapper orderMapper;
     private final SnapshotTagService snapshotTagService;
+    private final OrderQueryService orderQueryService;
 
     @Override
     @GetMapping
@@ -51,7 +53,8 @@ public class OrderController implements OrderApi {
                     .build();
            }
 
-            List<OrderDTO> all = orderMapper.rowsToDtos(orderRepository.findAllRows());
+
+            List<OrderDTO> all = orderQueryService.findAllOrdersWithProducts();
             return ResponseEntity.ok()
                     .eTag(current.etag())
                     .lastModified(current.lastModified())
@@ -74,7 +77,9 @@ public class OrderController implements OrderApi {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<OrderDTO> createOrder(@RequestBody OrderDTO orderToCreate) {
-        Order savedOrder = orderRepository.save(orderMapper.orderDTOToOrder(orderToCreate));
+        Order entity = orderMapper.orderDTOToOrder(orderToCreate);
+        entity.setId(null);
+        Order savedOrder = orderRepository.save(entity);
         OrderDTO orderDTO = orderMapper.orderToOrderDTO(savedOrder);
         URI createdURI = URI.create("/order/" + orderDTO.getId());
         return ResponseEntity.created(createdURI).body(orderDTO);

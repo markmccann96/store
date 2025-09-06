@@ -1,11 +1,15 @@
 package com.example.store.controller;
 
+import com.example.store.api.dto.OrderCustomerDTO;
+import com.example.store.api.dto.OrderDTO;
 import com.example.store.entity.Customer;
 import com.example.store.entity.Order;
-import com.example.store.entity.OrderRow;
+import com.example.store.repository.projection.OrderRow;
 import com.example.store.mapper.CustomerMapper;
 import com.example.store.repository.CustomerRepository;
 import com.example.store.repository.OrderRepository;
+import com.example.store.repository.projection.ProductSummaryView;
+import com.example.store.service.OrderQueryService;
 import com.example.store.service.SnapshotTagService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -24,6 +28,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
 import java.util.Optional;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -48,6 +53,9 @@ class OrderControllerTests {
 
     @MockitoBean
     private SnapshotTagService snapshotTagService;
+
+    @MockitoBean
+    private OrderQueryService orderQueryService;
 
     private Order order;
     private Customer customer;
@@ -84,13 +92,23 @@ class OrderControllerTests {
             public String getCustomerName() {
                 return "John Doe";
             }
+
+            @Override
+            public List<ProductSummaryView> getProducts() {
+                return List.of();
+            }
         };
     }
 
     @Test
     void testCreateOrder() throws Exception {
         when(customerRepository.findById(1L)).thenReturn(Optional.of(customer));
-        when(orderRepository.save(order)).thenReturn(order);
+        Order savedOrder = new Order();
+        savedOrder.setId(1L);
+        savedOrder.setDescription(order.getDescription());
+        savedOrder.setProducts(order.getProducts());
+        savedOrder.setCustomer(order.getCustomer());
+        when(orderRepository.save(any())).thenReturn(savedOrder);
 
         mockMvc.perform(post("/order")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -104,6 +122,11 @@ class OrderControllerTests {
     void testGetOrder() throws Exception {
         when(orderRepository.findAllRows()).thenReturn(List.of(row));
         when(snapshotTagService.current()).thenReturn(new SnapshotTagService.Snapshot("aTag", 1000));
+        OrderDTO orderDTO = new OrderDTO();
+        orderDTO.setCustomer(new OrderCustomerDTO());
+        orderDTO.getCustomer().setName("John Doe");
+        orderDTO.setDescription("Test Order");
+        when(orderQueryService.findAllOrdersWithProducts()).thenReturn(List.of(orderDTO));
 
         mockMvc.perform(get("/order"))
                 .andExpect(status().isOk())
@@ -153,21 +176,25 @@ class OrderControllerTests {
 
     @Test
     void returns200WhenChanged() throws Exception {
-        when(orderRepository.findAllRows()).thenReturn(List.of(row));
+
         when(snapshotTagService.current()).thenReturn(new SnapshotTagService.Snapshot("aTag", 1000));
+        OrderDTO orderDTO = new OrderDTO();
+        orderDTO.setDescription("Test Order");
+        orderDTO.setCustomer(new OrderCustomerDTO());
+        orderDTO.getCustomer().setName("Joe Doe");
+        when(orderQueryService.findAllOrdersWithProducts()).thenReturn(List.of(orderDTO));
         var res1 = mockMvc.perform(get("/order")).andReturn().getResponse();
         var etag = res1.getHeader("ETag");
 
-        Mockito.clearInvocations(snapshotTagService, orderRepository);
+        Mockito.clearInvocations(snapshotTagService, orderRepository, orderQueryService);
         SnapshotTagService.Snapshot snapshot2 = new SnapshotTagService.Snapshot("eTag2", 1000);
         when(snapshotTagService.current()).thenReturn(snapshot2);
-        when(orderRepository.findAllRows()).thenReturn(List.of(row));
         when(snapshotTagService.matchesConditional("aTag", 1000, snapshot2)).thenReturn(false);
         mockMvc.perform(get("/order").header("If-None-Match", etag))
                 .andExpect(status().isOk())
                 .andExpect(header().exists("ETag"))
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON));
 
-        verify(orderRepository).findAllRows();
+        verify(orderQueryService).findAllOrdersWithProducts();
     }
 }

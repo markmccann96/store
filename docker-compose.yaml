@@ -40,5 +40,16 @@ services:
       - "8080:8080"
     restart: unless-stopped
 
+  swagger-ui:
+    image: swaggerapi/swagger-ui:latest
+    depends_on:
+      - app
+    environment:
+      # Point the UI (running in the browser) at your app’s OpenAPI endpoint
+      URLS: '[{"url":"http://localhost:8080/v3/api-docs","name":"store"}]'
+      URLS_PRIMARY_NAME: store
+    ports:
+      - "8081:8080"
+
 volumes:
   pgdata:

@@ -71,6 +71,10 @@ paths:
       responses:
         '201':
           description: Created
+          headers:
+            Location:
+              description: URI of the created product resource.
+              schema: { type: string, format: uri }
           content:
             application/json:
               schema:
@@ -162,6 +166,14 @@ paths:
       responses:
         '201':
           description: Created
+          headers:
+            Location:
+              description: URI of the created product resource.
+              schema: { type: string, format: uri }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
       operationId: createCustomer
       description: Create a new customer
       requestBody:
@@ -259,29 +271,22 @@ paths:
     get:
       summary: Get Products
       description: >
-        Get all products. Supports pagination via `limit` and `offset`.  
-        **Backward compatibility:** if `limit` is omitted, all matching records are returned.
-      tags: [ product ]
+        Get all products. Supports pagination via `limit` and `offset`.
+        **Backward compatibility:** if `limit` is omitted, return all matching records.
+      tags: [product]
       operationId: getProducts
       parameters:
         - name: limit
           in: query
           required: false
           description: Maximum number of results to return. If omitted, returns all.
-          schema:
-            type: integer
-            format: int32
-            minimum: 1
+          schema: { type: integer, format: int32, minimum: 1 }
           example: 50
         - name: offset
           in: query
           required: false
           description: Number of results to skip before returning results.
-          schema:
-            type: integer
-            format: int32
-            minimum: 0
-            default: 0
+          schema: { type: integer, format: int32, minimum: 0, default: 0 }
           example: 100
       responses:
         '200':
@@ -289,56 +294,106 @@ paths:
           headers:
             X-Total-Count:
               description: Total number of matching products (before pagination).
-              schema:
-                type: integer
-                format: int64
+              schema: { type: integer, format: int64 }
             Link:
               description: >
                 RFC 8288 pagination links (`next`, `prev`, `first`, `last`).
                 Example: `<http://localhost:8080/products?limit=50&offset=50>; rel="next"`.
-              schema:
-                type: string
+              schema: { type: string }
           content:
             application/json:
               schema:
-                # Keep your current response shape.
-                # If this endpoint actually returns a collection, consider switching to:
-                # type: array; items: { $ref: '#/components/schemas/Product' }
-                type: object
-                properties:
-                  id:
-                    type: string
-                  description:
-                    type: string
-                  orders:
-                    type: array
-                    items:
-                      type: integer
-                      format: int64
+                type: array
+                items:
+                  $ref: '#/components/schemas/Product'
     post:
       summary: Create Product
-      tags:
-        - product
-      responses:
-        '201':
-          description: Created
+      description: Create a new product.
+      tags: [product]
       operationId: createProduct
-      description: Create a new product
       requestBody:
+        required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                id:
-                  type: integer
-                  format: int64
-                description:
-                  type: string
-                  x-stoplight:
-                    id: jbh0jzkonppv8
+              $ref: '#/components/schemas/ProductCreate'
+      responses:
+        '201':
+          description: Created
+          headers:
+            Location:
+              description: URI of the created product resource.
+              schema: { type: string, format: uri }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '400':
+          description: Bad Request
+        '409':
+          description: Conflict (e.g., duplicate ID)
+
+  /products/{id}:
+    get:
+      summary: Get Product by ID
+      tags: [product]
+      operationId: getProductById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '404':
+          description: Not Found
 components:
   schemas:
+    # Full representation for reads (includes which orders contain the product)
+    Product:
+      type: object
+      required: [ id, description, orders ]
+      properties:
+        id:
+          type: integer
+          format: int64
+        description:
+          type: string
+        orders:
+          description: IDs of orders that include this product.
+          type: array
+          items:
+            type: integer
+            format: int64
+
+    # Payload used to create a product.
+    # If your ID is server-generated, drop it from "required" and/or remove it entirely.
+    ProductCreate:
+      type: object
+      required: [ description ]   # make [id, description] if client supplies ID
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Optional client-supplied ID.
+        description:
+          type: string
+
+    # Lightweight product shape for embedding inside Order
+    ProductSummary:
+      type: object
+      required: [ id, description ]
+      properties:
+        id:
+          type: integer
+          format: int64
+        description:
+          type: string
     Order:
       title: Order
       type: object
@@ -348,6 +403,11 @@ components:
           format: int64
         description:
           type: string
+        products:
+          description: Products contained in this order.
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductSummary'
         customer:
           type: object
           properties:

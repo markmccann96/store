@@ -13,7 +13,7 @@ public class ResponseUtility {
     }
 
     /** Builds RFC 8288 Link header using current request URL and query params. */
-    public static String buildLinkHeader( int limit, int offset, long total) {
+    public static String buildLinkHeader( long limit, int offset, long total) {
         UriComponentsBuilder base = ServletUriComponentsBuilder.fromCurrentRequest();
         List<String> links = new ArrayList<>();
 
@@ -25,7 +25,7 @@ public class ResponseUtility {
 
         // last
         if (total > 0) {
-            long lastOffset = ((total - 1) / limit) * (long) limit;
+            long lastOffset = ((total - 1) / limit) *  limit;
             String last = base.replaceQueryParam("limit", limit)
                     .replaceQueryParam("offset", lastOffset)
                     .toUriString();
@@ -34,7 +34,7 @@ public class ResponseUtility {
 
         // prev
         if (offset > 0) {
-            int prevOffset = Math.max(offset - limit, 0);
+            long prevOffset = Math.max(offset - limit, 0L);
             String prev = base.replaceQueryParam("limit", limit)
                     .replaceQueryParam("offset", prevOffset)
                     .toUriString();
@@ -43,7 +43,7 @@ public class ResponseUtility {
 
         // next
         if (offset + limit < total) {
-            int nextOffset = offset + limit;
+            long nextOffset = offset + limit;
             String next = base.replaceQueryParam("limit", limit)
                     .replaceQueryParam("offset", nextOffset)
                     .toUriString();
